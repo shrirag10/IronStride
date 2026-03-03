@@ -1,0 +1,12 @@
+# IronStride - Dependencies
+mujoco>=3.1.0
+gymnasium>=1.0.0
+stable-baselines3[extra]>=2.3.0
+tensorboard>=2.16.0
+# mujoco_menagerie: cloned into third_party/ (not pip-installable)
+# git clone --depth 1 https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
+numpy>=1.26.0
+matplotlib>=3.8.0
+pyyaml>=6.0
+imageio>=2.34.0
+imageio-ffmpeg>=0.4.9

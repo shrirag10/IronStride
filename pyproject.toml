@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "ironstride"
+version = "1.0.0"
+description = "Humanoid Locomotion & RL Algorithm Benchmarking (PPO vs SAC) using Unitree H1 in MuJoCo"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Shriman Raghav Srinivasan"}
+]
+keywords = ["reinforcement-learning", "humanoid", "mujoco", "ppo", "sac", "robotics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "mujoco>=3.1.0",
+    "gymnasium>=1.0.0",
+    "stable-baselines3[extra]>=2.3.0",
+    "tensorboard>=2.16.0",
+    # mujoco_menagerie: cloned into third_party/ (not pip-installable)
+    "numpy>=1.26.0",
+    "matplotlib>=3.8.0",
+    "pyyaml>=6.0",
+    "imageio>=2.34.0",
+    "imageio-ffmpeg>=0.4.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/shrirag10/IronStride"
+Repository = "https://github.com/shrirag10/IronStride"
+
+[tool.setuptools.packages.find]
+include = ["ironstride*"]
