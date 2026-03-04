@@ -4,6 +4,12 @@
 
 > *Training a dynamically unstable bipedal humanoid (Unitree H1) to walk, balance, and recover from disturbances — then benchmarking PPO against SAC in high-dimensional continuous control.*
 
+<p align="center">
+  <img src="results/standing_demo.gif" width="480" alt="IronStride: Unitree H1 Stable Standing Policy">
+  <br>
+  <em>PPO policy after 10M steps — rock-solid stable standing (20 seconds, zero variance)</em>
+</p>
+
 | | |
 
 ---
@@ -243,13 +249,19 @@ The initial 1M-step run produced a "fall immediately" policy (reward: -38,000/st
 | **Action scale too large** | Extreme torques from exploration | Reduced by 0.3× |
 | **No action smoothness** | Jerky commands → instability | Added `R_smooth = -mean(Δa²)` |
 
-### Why Both Algorithms Matter for Humanoid Control
+<p align="center">
+  <img src="results/failure_analysis_v1_vs_v2.png" width="800" alt="Failure Analysis: v1 vs v2">
+  <br>
+  <em>Left: Reward curve. Right: Episode length. The v1 policy (red) falls in 0.2s; v2 (green) stands for 20s.</em>
+</p>
+
+### Why Both Algorithms Matter for Humanoid Deployment
 
 In real-world robotics deployment:
 - **PPO** is preferred when simulation is fast and cheap (GPU-accelerated physics), making wall-clock time the bottleneck
 - **SAC** is preferred when simulation is expensive or real-robot data is limited, making sample efficiency the bottleneck
 
-Understanding these trade-offs is critical for deploying humanoid locomotion policies on platforms like Tesla Optimus or Figure 01, where sim-to-real transfer efficiency directly impacts development velocity.
+**For Tesla Optimus-scale training where Isaac Lab provides GPU-accelerated physics at 100K+ FPS, PPO's parallelism advantage dominates. For real-robot fine-tuning on hardware where simulation rollouts are expensive, SAC's sample efficiency becomes critical.** Understanding these trade-offs is essential for deploying humanoid locomotion policies where sim-to-real transfer efficiency directly impacts development velocity.
 
 ---
 
