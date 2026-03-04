@@ -5,11 +5,6 @@
 > *Training a dynamically unstable bipedal humanoid (Unitree H1) to walk, balance, and recover from disturbances — then benchmarking PPO against SAC in high-dimensional continuous control.*
 
 | | |
-|---|---|
-| **Project Code** | SR-HUM-04-ADV |
-| **Candidate** | Shriman Raghav Srinivasan |
-| **Target Roles** | Humanoid Controls Engineer · Reinforcement Learning Engineer |
-| **Companies** | Tesla Optimus · Figure AI · Boston Dynamics |
 
 ---
 
