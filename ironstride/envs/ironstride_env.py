@@ -138,6 +138,7 @@ class IronStrideEnv(gym.Env):
         self._w_symmetry = reward_cfg["w_symmetry"]
         self._w_survival = reward_cfg["w_survival"]
         self._w_height = reward_cfg.get("w_height", 2.0)
+        self._w_action_smooth = reward_cfg.get("w_action_smooth", 0.5)
         self._target_height = reward_cfg.get("target_height", 0.98)
         self._tracking_sigma = reward_cfg["tracking_sigma"]
 
@@ -366,6 +367,10 @@ class IronStrideEnv(gym.Env):
         height_error = torso_z - self._target_height
         r_height = np.exp(-5.0 * height_error**2)
 
+        # --- R_action_smooth: Penalty for jerky actions ---
+        action_diff = action - self._prev_action
+        r_action_smooth = -np.mean(action_diff ** 2)
+
         # Weighted sum
         reward = (
             self._w_track * r_track
@@ -374,6 +379,7 @@ class IronStrideEnv(gym.Env):
             + self._w_symmetry * r_symmetry
             + self._w_survival * r_survival
             + self._w_height * r_height
+            + self._w_action_smooth * r_action_smooth
         )
 
         return float(reward)
