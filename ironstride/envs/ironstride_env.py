@@ -137,7 +137,16 @@ class IronStrideEnv(gym.Env):
         self._w_energy = reward_cfg["w_energy"]
         self._w_symmetry = reward_cfg["w_symmetry"]
         self._w_survival = reward_cfg["w_survival"]
+        self._w_height = reward_cfg.get("w_height", 2.0)
+        self._target_height = reward_cfg.get("target_height", 0.98)
         self._tracking_sigma = reward_cfg["tracking_sigma"]
+
+        # Pre-compute max torque for energy normalization
+        if self.model.actuator_ctrlrange.any():
+            ctrl_max = np.abs(self.model.actuator_ctrlrange).max(axis=1)
+        else:
+            ctrl_max = np.ones(self.n_actuators)
+        self._torque_norm = float(np.sum(ctrl_max ** 2))  # for normalising R_energy
 
         # ── Termination ─────────────────────────────────────────────
         self._min_height = env_cfg["min_torso_height"]
@@ -216,6 +225,9 @@ class IronStrideEnv(gym.Env):
         self, action: np.ndarray
     ) -> tuple[np.ndarray, float, bool, bool, dict]:
         action = np.clip(action, -1.0, 1.0).astype(np.float32)
+
+        # Clear any lingering external forces (fixes perturbation persistence bug)
+        self.data.xfrc_applied[:] = 0.0
 
         # Scale normalised action → PD position targets
         pd_targets = self._action_scale * action
@@ -314,7 +326,7 @@ class IronStrideEnv(gym.Env):
         """
         Multi-objective reward:
             R_total = w1·R_track + w2·R_posture + w3·R_energy
-                    + w4·R_symmetry + w5·R_survival
+                    + w4·R_symmetry + w5·R_survival + w6·R_height
         """
         # --- R_track: Gaussian on forward velocity error ---
         forward_vel = self.data.qvel[0]  # x-axis velocity in world frame
@@ -332,20 +344,27 @@ class IronStrideEnv(gym.Env):
         tilt_angle = np.arccos(cos_tilt)
         r_posture = np.exp(-5.0 * tilt_angle**2)
 
-        # --- R_energy: Penalty on sum of squared torques ---
+        # --- R_energy: Normalised penalty on sum of squared torques ---
+        #   Scaled to [0, -1] range so it doesn't dominate other terms
         torques = self.data.actuator_force
-        r_energy = -np.sum(torques**2)
+        r_energy = -np.sum(torques**2) / max(self._torque_norm, 1.0)
 
-        # --- R_symmetry: Penalty on L/R velocity variance ---
+        # --- R_symmetry: Normalised L/R velocity variance ---
         r_symmetry = 0.0
         if len(self._left_actuator_ids) > 0 and len(self._right_actuator_ids) > 0:
             n_pairs = min(len(self._left_actuator_ids), len(self._right_actuator_ids))
             left_vel = self.data.actuator_velocity[self._left_actuator_ids[:n_pairs]]
             right_vel = self.data.actuator_velocity[self._right_actuator_ids[:n_pairs]]
-            r_symmetry = -np.sum((left_vel - right_vel) ** 2)
+            diff = left_vel - right_vel
+            r_symmetry = -np.mean(diff ** 2)  # normalised by count
 
         # --- R_survival: Constant per-step bonus ---
         r_survival = 1.0
+
+        # --- R_height: Reward for maintaining standing height ---
+        torso_z = self.data.qpos[2]
+        height_error = torso_z - self._target_height
+        r_height = np.exp(-5.0 * height_error**2)
 
         # Weighted sum
         reward = (
@@ -354,6 +373,7 @@ class IronStrideEnv(gym.Env):
             + self._w_energy * r_energy
             + self._w_symmetry * r_symmetry
             + self._w_survival * r_survival
+            + self._w_height * r_height
         )
 
         return float(reward)
@@ -423,13 +443,15 @@ class IronStrideEnv(gym.Env):
         """
         Compute per-actuator scaling from normalised [-1,1] to radian limits.
         Uses the actuator control range if defined, otherwise defaults to ±π/2.
+        Multiplied by 0.3 to prevent extreme initial torques.
         """
+        ACTION_SCALE_FACTOR = 0.3  # conservative scaling to tame exploration
         if self.model.actuator_ctrlrange.any():
             low = self.model.actuator_ctrlrange[:, 0]
             high = self.model.actuator_ctrlrange[:, 1]
-            scale = (high - low) / 2.0
+            scale = (high - low) / 2.0 * ACTION_SCALE_FACTOR
         else:
-            scale = np.full(self.n_actuators, np.pi / 2, dtype=np.float64)
+            scale = np.full(self.n_actuators, np.pi / 2 * ACTION_SCALE_FACTOR, dtype=np.float64)
         return scale.astype(np.float32)
 
     def _identify_lr_actuators(self) -> tuple[list[int], list[int]]:
