@@ -261,7 +261,7 @@ In real-world robotics deployment:
 - **PPO** is preferred when simulation is fast and cheap (GPU-accelerated physics), making wall-clock time the bottleneck
 - **SAC** is preferred when simulation is expensive or real-robot data is limited, making sample efficiency the bottleneck
 
-**For Tesla Optimus-scale training where Isaac Lab provides GPU-accelerated physics at 100K+ FPS, PPO's parallelism advantage dominates. For real-robot fine-tuning on hardware where simulation rollouts are expensive, SAC's sample efficiency becomes critical.** Understanding these trade-offs is essential for deploying humanoid locomotion policies where sim-to-real transfer efficiency directly impacts development velocity.
+For real-robot fine-tuning on hardware where simulation rollouts are expensive, SAC's sample efficiency becomes critical.** Understanding these trade-offs is essential for deploying humanoid locomotion policies where sim-to-real transfer efficiency directly impacts development velocity.
 
 ---
 
