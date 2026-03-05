@@ -223,18 +223,26 @@ SAC is an **off-policy** algorithm that maintains a replay buffer and maximizes 
 
 **Trade-off:** SAC cannot easily leverage parallel environments for data collection, and the replay buffer is memory-intensive (300K transitions at float32).
 
-### Results: Stable Standing (10M Steps PPO)
+### Results: Stable Standing (10M Steps)
 
-After identifying and fixing 5 critical bugs in the reward function (see below), PPO was retrained for 10,000,000 steps. The result: **perfect stable standing for the full 20-second episode, with zero variance across all evaluation runs.**
+After identifying and fixing 5 critical bugs in the reward function (see below), both PPO and SAC were trained for 10,000,000 steps. **Both achieve perfect stable standing for the full 20-second episode, with zero variance.**
 
-| Metric | Value |
-|--------|-------|
-| **Episode Length** | **1000 / 1000 steps (20.0s)** ✅ |
-| **Mean Reward** | **9,735.68 ± 0.00** |
-| **Max Height** | **1.058m** (full standing) |
-| **Max Velocity** | 0.144 m/s (near-stationary) |
-| **Wall Clock Time** | 147.7 min (10M steps) |
-| **Training FPS** | ~1,130 (8 parallel envs) |
+| Metric | PPO | SAC |
+|--------|:---:|:---:|
+| **Episode Length** | **1000 / 1000 (20.0s)** ✅ | **1000 / 1000 (20.0s)** ✅ |
+| **Mean Reward** | **9,735.68 ± 0.00** | **8,479.67 ± 0.00** |
+| **Max Height** | 1.058m | 1.058m |
+| **Max Velocity** | 0.144 m/s | 0.464 m/s |
+| **Variance** | **0.00** | **0.00** |
+| **Training Time** | **2.5 hours** 🚀 | 17 hours |
+| **Training FPS** | ~1,130 (8 envs) | ~162 (1 env, GPU) |
+| **Speed Advantage** | **7× faster** | — |
+
+<p align="center">
+  <img src="results/ppo_vs_sac_benchmark.png" width="800" alt="PPO vs SAC Benchmark">
+  <br>
+  <em>Training curves and final evaluation: PPO (blue) reaches higher reward 7× faster than SAC (orange).</em>
+</p>
 
 ### Bugs Fixed (v1 → v2)
 
