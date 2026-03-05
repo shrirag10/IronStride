@@ -5,9 +5,9 @@
 > *Training a dynamically unstable bipedal humanoid (Unitree H1) to walk, balance, and recover from disturbances — then benchmarking PPO against SAC in high-dimensional continuous control.*
 
 <p align="center">
-  <img src="results/standing_demo.gif" width="480" alt="IronStride: Unitree H1 Stable Standing Policy">
+  <img src="results/ppo_vs_sac_comparison.gif" width="800" alt="PPO vs SAC: Side-by-side stable standing comparison">
   <br>
-  <em>PPO policy after 10M steps — rock-solid stable standing (20 seconds, zero variance)</em>
+  <em>PPO (left, 2.5h training) vs SAC (right, 17h training) — both achieve perfect 20-second standing</em>
 </p>
 
 | | |
@@ -263,13 +263,24 @@ The initial 1M-step run produced a "fall immediately" policy (reward: -38,000/st
   <em>Left: Reward curve. Right: Episode length. The v1 policy (red) falls in 0.2s; v2 (green) stands for 20s.</em>
 </p>
 
-### Why Both Algorithms Matter for Humanoid Deployment
+### Why PPO Outperformed SAC (and Why That Matters)
 
-In real-world robotics deployment:
-- **PPO** is preferred when simulation is fast and cheap (GPU-accelerated physics), making wall-clock time the bottleneck
-- **SAC** is preferred when simulation is expensive or real-robot data is limited, making sample efficiency the bottleneck
+Both algorithms achieved perfect 1000/1000 standing, but **PPO reached it 7× faster** (2.5h vs 17h). Here's the technical breakdown:
 
-For real-robot fine-tuning on hardware where simulation rollouts are expensive, SAC's sample efficiency becomes critical.** Understanding these trade-offs is essential for deploying humanoid locomotion policies where sim-to-real transfer efficiency directly impacts development velocity.
+| Factor | PPO Advantage | SAC Limitation |
+|--------|:---:|:---:|
+| **Parallelism** | 8 environments collecting data simultaneously | Single environment (off-policy replay buffer) |
+| **FPS** | ~1,130 | ~162 |
+| **Update efficiency** | Batch updates every 2048 steps | Per-step gradient updates (expensive) |
+| **Stability** | Clipped surrogate = stable learning | Entropy auto-tuning oscillated (α went 0.2→6.8) |
+| **Task fit** | Simple standing = low-variance skill | SAC's exploration overkill for standing still |
+
+**Key insight:** Standing is a *unimodal* task — there's essentially one good solution (keep joints locked, stay upright). PPO's conservative, on-policy updates converge quickly to this solution. SAC's entropy maximization *actively fights convergence* by encouraging the policy to explore diverse behaviors, which is counterproductive when the goal is "don't move."
+
+**When would SAC win?**  
+For *multi-modal* tasks like walking (where there are many valid gaits), manipulation, or real-robot fine-tuning where samples are expensive, SAC's sample efficiency and off-policy learning would outperform PPO.
+
+**For Tesla Optimus-scale training where Isaac Lab provides GPU-accelerated physics at 100K+ FPS, PPO's parallelism advantage dominates. For real-robot fine-tuning on hardware where each rollout costs real time and wear, SAC's ability to reuse past experiences becomes critical.**
 
 ---
 
